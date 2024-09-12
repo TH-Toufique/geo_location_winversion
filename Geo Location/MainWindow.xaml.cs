@@ -11,7 +11,7 @@ namespace GeoLocApp
     {
         public MainWindow()
         {
-            InitializeComponent();
+            InitializeComponent();  // Ensure this method is called to initialize the components in the XAML
         }
 
         // Event handler for button click
@@ -21,18 +21,16 @@ namespace GeoLocApp
             string apiKey = ApiKeyTextBox.Text;
             string ipAddress = IpAddressTextBox.Text;
 
-            // Check if the input fields are empty or have placeholder text
-            if (string.IsNullOrEmpty(apiKey) || apiKey == "Enter API Key" ||
-                string.IsNullOrEmpty(ipAddress) || ipAddress == "Enter IP Address")
+            // Validate inputs
+            if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(ipAddress) || apiKey == "Enter API Key" || ipAddress == "Enter IP Address")
             {
                 MessageBox.Show("Please enter both API key and IP address.");
                 return;
             }
 
-            // Call the API to fetch location data
+            // Fetch location data
             string locationData = await FetchLocationData(apiKey, ipAddress);
 
-            // Display the result or error message
             if (locationData != null)
             {
                 DisplayLocationData(locationData);
@@ -52,41 +50,83 @@ namespace GeoLocApp
             {
                 try
                 {
-                    // Make the API request
                     HttpResponseMessage response = await client.GetAsync(url);
                     response.EnsureSuccessStatusCode();
-
-                    // Get response data as a string
-                    string responseData = await response.Content.ReadAsStringAsync();
-                    return responseData;
+                    return await response.Content.ReadAsStringAsync();
                 }
                 catch (HttpRequestException e)
                 {
-                    // Handle any errors with the request
                     MessageBox.Show("Request error: " + e.Message);
                     return null;
                 }
             }
         }
 
-        // Parse and display location data from the API response
+        // Display all the detailed location data in a message box
         private void DisplayLocationData(string jsonData)
         {
-            // Parse the JSON response
             JObject data = JObject.Parse(jsonData);
 
-            // Access and display relevant data
+            // Access all fields
             string ip = data["ip"].ToString();
-            string country = data["country_name"].ToString();
-            string city = data["city"].ToString();
-            string latitude = data["latitude"].ToString();
-            string longitude = data["longitude"].ToString();
+            string hostname = data["hostname"]?.ToString() ?? "N/A";
+            string continent = data["continent_name"]?.ToString() ?? "N/A";
+            string country = $"{data["country_name"]} ({data["country_code3"]})";
+            string state = data["state_prov"]?.ToString() ?? "N/A";
+            string district = data["district"]?.ToString() ?? "N/A";
+            string city = data["city"]?.ToString() ?? "N/A";
+            string zipcode = data["zipcode"]?.ToString() ?? "N/A";
+            string latitude = data["latitude"]?.ToString() ?? "N/A";
+            string longitude = data["longitude"]?.ToString() ?? "N/A";
+            string isEU = data["is_eu"]?.ToString() == "true" ? "Yes" : "No";
+            string callingCode = data["calling_code"]?.ToString() ?? "N/A";
+            string countryTLD = data["country_tld"]?.ToString() ?? "N/A";
+            string languages = data["languages"]?.ToString() ?? "N/A";
+            string isp = data["isp"]?.ToString() ?? "N/A";
+            string organization = data["organization"]?.ToString() ?? "N/A";
+            string asn = data["asn"]?.ToString() ?? "N/A";
 
-            // Display the data in a MessageBox (you can change this to update the UI directly)
-            MessageBox.Show($"IP: {ip}\nCountry: {country}\nCity: {city}\nLatitude: {latitude}\nLongitude: {longitude}");
+            // Timezone details
+            var timeZone = data["time_zone"];
+            string timeZoneName = timeZone?["name"]?.ToString() ?? "N/A";
+            string currentTime = timeZone?["current_time"]?.ToString() ?? "N/A";
+            string isDST = timeZone?["is_dst"]?.ToString() == "true" ? "Yes" : "No";
+            string dstSavings = timeZone?["dst_savings"]?.ToString() ?? "N/A";
+
+            // Currency details
+            var currency = data["currency"];
+            string currencyName = currency?["name"]?.ToString() ?? "N/A";
+            string currencyCode = currency?["code"]?.ToString() ?? "N/A";
+            string currencySymbol = currency?["symbol"]?.ToString() ?? "N/A";
+
+            // Display all the data in a message box
+            string message = $"IP: {ip}\n" +
+                             $"Hostname: {hostname}\n" +
+                             $"Continent: {continent}\n" +
+                             $"Country: {country}\n" +
+                             $"State/Province: {state}\n" +
+                             $"District: {district}\n" +
+                             $"City: {city}\n" +
+                             $"Zipcode: {zipcode}\n" +
+                             $"Latitude: {latitude}\n" +
+                             $"Longitude: {longitude}\n" +
+                             $"Is EU: {isEU}\n" +
+                             $"Calling Code: {callingCode}\n" +
+                             $"Country TLD: {countryTLD}\n" +
+                             $"Languages: {languages}\n" +
+                             $"ISP: {isp}\n" +
+                             $"Organization: {organization}\n" +
+                             $"ASN: {asn}\n" +
+                             $"Currency: {currencyName} ({currencyCode}) {currencySymbol}\n" +
+                             $"Time Zone: {timeZoneName}\n" +
+                             $"Current Time: {currentTime}\n" +
+                             $"Is DST: {isDST}\n" +
+                             $"DST Savings: {dstSavings} hour(s)";
+
+            MessageBox.Show(message, "Location Data", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        // Placeholder text logic for when the TextBox gains focus
+        // Placeholder logic for textboxes
         private void RemoveText(object sender, EventArgs e)
         {
             TextBox textBox = sender as TextBox;
@@ -96,7 +136,6 @@ namespace GeoLocApp
             }
         }
 
-        // Placeholder text logic for when the TextBox loses focus
         private void AddText(object sender, EventArgs e)
         {
             TextBox textBox = sender as TextBox;
